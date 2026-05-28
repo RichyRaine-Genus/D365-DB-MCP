@@ -1,0 +1,4 @@
+mcp>=1.0
+pyodbc>=4.0
+pyyaml>=6.0
+python-dotenv>=1.0

@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "d365-mcp-server"
+version = "0.1.0"
+description = "MCP server providing live read-only access to D365 AxDB for GitHub Copilot Agent mode"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=1.0",
+    "pyodbc>=4.0",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+]
+
+[project.scripts]
+d365-mcp-server = "mcp_server.server:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["mcp_server*"]

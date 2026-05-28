@@ -1,0 +1,20 @@
+{
+  // MCP server registration for VS Code Copilot Agent mode.
+  //
+  // After running Install-D365MCP.ps1:
+  //   1. Open this folder in VS Code
+  //   2. Open Copilot Chat (Ctrl+Alt+I) and switch to Agent mode
+  //   3. The D365 tools will appear in the tool picker
+  //
+  // Your AXDB_SERVER is read from the .env file in this folder (gitignored).
+  // Run Install-D365MCP.ps1 to create it, or copy .env.example to .env manually.
+  "servers": {
+    "d365-axdb": {
+      "type": "stdio",
+      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "mcp_server.server"],
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  }
+}
