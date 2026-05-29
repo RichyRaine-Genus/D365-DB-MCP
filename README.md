@@ -125,7 +125,8 @@ You do **not** need system environment variables or shell profile changes in eit
 | `search_objects` | Search tables and views by keyword across all modules |
 | `search_by_column` | Find all tables and views that contain a specific column name |
 | `get_view_sql` | Return the full SQL definition of a DMF view |
-| `get_view_source_tables` | Parse a view's SQL and return the base tables it reads from |
+| `get_view_source_tables` | Parse a view's SQL and return base tables (fast heuristic regex) |
+| `get_view_dependencies` | Authoritative object dependencies via `sys.sql_expression_dependencies` — correctly resolves CTEs, subqueries and nested views |
 | `get_table_schema` | Return column names, types, and nullability for a table or view |
 | `get_entity_columns` | Return DMF entity columns annotated with their source AxDB tables |
 | `get_custom_fields` | Return Genus-added custom fields (`GNS*` prefix or `_CUSTOM` suffix) |

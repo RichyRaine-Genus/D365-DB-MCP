@@ -24,6 +24,7 @@ from mcp_server.tools.discovery import (
 from mcp_server.tools.schema import (
     get_view_sql,
     get_view_source_tables,
+    get_view_dependencies,
     get_table_schema,
     get_column_count,
     get_entity_columns,
@@ -179,13 +180,38 @@ async def list_tools() -> list[types.Tool]:
             name="get_view_source_tables",
             description=(
                 "Parse a D365 DMF view's SQL and return the base AxDB tables it reads from, "
-                "with their aliases."
+                "with their aliases. Uses a heuristic regex — fast but may miss CTEs or subqueries. "
+                "Use get_view_dependencies for authoritative results."
             ),
             inputSchema={
                 "type": "object",
                 "required": ["view_name"],
                 "properties": {
                     "view_name": {"type": "string"},
+                    "instance": {"type": "string"},
+                },
+            },
+        ),
+        types.Tool(
+            name="get_view_dependencies",
+            description=(
+                "Return the authoritative list of tables and views that a D365 DMF view depends on, "
+                "using sys.sql_expression_dependencies. More accurate than get_view_source_tables — "
+                "correctly resolves CTEs, subqueries, and multi-level view references. "
+                "Returns base_tables, views, and other dependencies separately."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["view_name"],
+                "properties": {
+                    "view_name": {
+                        "type": "string",
+                        "description": "DMF view name in UPPERCASE, e.g. 'HCMWORKERENTITY', 'CUSTINVOICEJOURNALLINEENTITY'.",
+                    },
+                    "include_views": {
+                        "type": "boolean",
+                        "description": "Include dependent views in results (default: true). Set false to return base tables only.",
+                    },
                     "instance": {"type": "string"},
                 },
             },
@@ -434,6 +460,8 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
                 result = get_view_sql(**arguments)
             case "get_view_source_tables":
                 result = get_view_source_tables(**arguments)
+            case "get_view_dependencies":
+                result = get_view_dependencies(**arguments)
             case "get_table_schema":
                 result = get_table_schema(**arguments)
             case "get_entity_columns":

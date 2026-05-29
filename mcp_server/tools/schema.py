@@ -2,14 +2,15 @@
 D365 MCP Server — schema tools.
 
 Tools:
-  get_view_sql           — full SQL text of a named DMF view
-  get_view_source_tables — base tables a view reads from (parsed from SQL text)
-  get_table_schema       — columns + types for a base table or view
-  get_column_count       — count columns in a table/view, with optional name filter
-  get_entity_columns     — columns for a DMF entity view with source attribution
-  get_custom_fields      — custom fields for a table (GNS* or _CUSTOM suffix)
-  get_table_indexes      — indexes defined on a table (PKs, unique, non-unique)
-  get_related_tables     — foreign key relationships in and out of a table
+  get_view_sql             — full SQL text of a named DMF view
+  get_view_source_tables   — base tables a view reads from (parsed from SQL text, heuristic)
+  get_view_dependencies    — authoritative object dependencies via sys.sql_expression_dependencies
+  get_table_schema         — columns + types for a base table or view
+  get_column_count         — count columns in a table/view, with optional name filter
+  get_entity_columns       — columns for a DMF entity view with source attribution
+  get_custom_fields        — custom fields for a table (GNS* or _CUSTOM suffix)
+  get_table_indexes        — indexes defined on a table (PKs, unique, non-unique)
+  get_related_tables       — foreign key relationships in and out of a table
 """
 
 import re
@@ -119,6 +120,90 @@ def get_view_source_tables(view_name: str, instance: str | None = None) -> dict:
             {"table_name": tbl, "alias": alias} for tbl, alias in seen.items()
         ],
     }
+
+
+# ---------------------------------------------------------------------------
+# Tool: get_view_dependencies
+# ---------------------------------------------------------------------------
+
+def get_view_dependencies(
+    view_name: str,
+    include_views: bool = True,
+    instance: str | None = None,
+) -> dict:
+    """
+    Return the authoritative list of objects a view depends on, using
+    sys.sql_expression_dependencies — more accurate than regex parsing.
+
+    Unlike get_view_source_tables (which uses a heuristic regex), this queries
+    SQL Server's own dependency metadata, so CTEs, subqueries, and multi-level
+    view references are all resolved correctly.
+
+    Args:
+        view_name:     View name (e.g. 'HCMWORKERENTITY', 'CUSTINVOICEJOURNALLINEENTITY').
+        include_views: If True (default), include other views in the results as well
+                       as base tables. Set False to return base tables only.
+        instance:      Instance name (default: 'default').
+
+    Returns:
+        Dict with view_name, dependency_count, dependencies (list of dicts with
+        object_name, object_type, schema_name, is_ambiguous).
+    """
+    sql = """
+        SELECT
+            COALESCE(ref.referenced_entity_name, '')    AS object_name,
+            COALESCE(o.type_desc, 'UNRESOLVED')         AS object_type,
+            COALESCE(ref.referenced_schema_name, 'dbo') AS schema_name,
+            ref.is_ambiguous
+        FROM   sys.sql_expression_dependencies ref
+        JOIN   sys.objects                     src
+               ON  src.object_id = ref.referencing_id
+               AND src.name      = ?
+               AND src.type      = 'V'
+        LEFT JOIN sys.objects                  o
+               ON  o.name = ref.referenced_entity_name
+        WHERE  ref.referenced_entity_name IS NOT NULL
+          AND  ref.referenced_entity_name <> ?
+        ORDER  BY o.type_desc, ref.referenced_entity_name
+    """
+
+    conn = _conn(instance)
+    try:
+        cur = conn.cursor()
+        vname = view_name.upper()
+        cur.execute(sql, vname, vname)
+        rows = cur.fetchall()
+
+        # type_desc values from sys.objects: USER_TABLE, VIEW, SQL_INLINE_TABLE_VALUED_FUNCTION, etc.
+        deps = []
+        for r in rows:
+            obj_type = r[1]
+            if not include_views and obj_type == "VIEW":
+                continue
+            deps.append({
+                "object_name": r[0],
+                "object_type": obj_type,
+                "schema_name": r[2],
+                "is_ambiguous": bool(r[3]),
+            })
+
+        # Separate base tables from views for convenience
+        base_tables = [d for d in deps if d["object_type"] == "USER_TABLE"]
+        views = [d for d in deps if d["object_type"] == "VIEW"]
+        other = [d for d in deps if d["object_type"] not in ("USER_TABLE", "VIEW")]
+
+        return {
+            "view_name": vname,
+            "found": True,
+            "dependency_count": len(deps),
+            "base_table_count": len(base_tables),
+            "view_count": len(views),
+            "base_tables": base_tables,
+            "views": views,
+            "other": other,
+        }
+    finally:
+        conn.close()
 
 
 # ---------------------------------------------------------------------------

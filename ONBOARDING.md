@@ -1,21 +1,21 @@
 # D365 AxDB MCP Server — Team Onboarding Guide
 
-> **Goal:** Connect GitHub Copilot (Agent mode) in *any* VS Code project to your local AxDB,
+> **Goal:** Connect GitHub Copilot (Agent mode) in *any* project to your local AxDB,
 > so you can query D365 tables and entities without leaving your IDE.
+> Works in both **VS Code** and **Visual Studio 2022 (Pro/Enterprise)**.
 
 ---
 
 ## How it works
 
 The MCP server lives in its own repo (`D365-DB-MCP`).  
-VS Code can point to it from **any other project folder** by adding a single config entry.  
+Your IDE points to it from **any project folder** via a single config file.  
 You clone the server repo once, run the installer once, then reference it from wherever you work.
 
 ```
 Your project folder (e.g. X:\Dev\MyProject)
-  └─ .vscode\
-       └─ mcp.json  ← tells VS Code where the server lives
-                       (absolute path to your D365-DB-MCP clone)
+  ├─ .vscode\mcp.json        ← VS Code users
+  └─ .vs\mcp.json            ← Visual Studio users (next to your .sln)
 
 D365-DB-MCP clone (e.g. C:\Dev\d365-mcp-server)
   ├─ .venv\              ← Python environment (created by installer)
@@ -33,7 +33,7 @@ Make sure these are installed on your **Tier 1 DEV machine**:
 |---|---|---|
 | 1 | **Python 3.11+** | `python --version` — [python.org](https://www.python.org/downloads/) (tick *Add to PATH*) |
 | 2 | **ODBC Driver 17 for SQL Server (64-bit)** | [aka.ms/odbc17](https://aka.ms/odbc17) |
-| 3 | **VS Code** with **GitHub Copilot Chat** extension | Extension ID: `GitHub.copilot-chat` |
+| 3 | **GitHub Copilot** in your IDE | VS Code: extension `GitHub.copilot-chat` · Visual Studio: included via subscription |
 | 4 | **Git** | `git --version` |
 
 > **Tier 1 DEV only.** AxDB is only reachable locally on your `GNSPLC-DEV-###` box.
@@ -41,9 +41,9 @@ Make sure these are installed on your **Tier 1 DEV machine**:
 
 ---
 
-## Step 2 — Clone and install the server (one-time)
+## Step 2 — Clone and install the server (one-time, all IDEs)
 
-Pick a folder where you keep shared tools — e.g. `C:\Dev\` or your Desktop.
+Pick a stable folder for shared tools — e.g. `C:\Dev\` or your Desktop.
 
 ```powershell
 # Clone the repo
@@ -62,11 +62,11 @@ The installer will:
 4. Write your personal `.env` file (gitignored — never pushed)
 5. Run a live connection test to confirm everything works
 
-✅ You're done with the server itself. **You never need to open this folder in VS Code.**
+✅ **You never need to open this folder in your IDE.** It just runs in the background.
 
 ---
 
-## Step 3 — Wire your project to the server
+## Step 3a — Wire your project (VS Code)
 
 In **your own project folder**, create (or add to) `.vscode/mcp.json`:
 
@@ -84,25 +84,73 @@ In **your own project folder**, create (or add to) `.vscode/mcp.json`:
 }
 ```
 
-> ⚠️ **Replace `C:\\Dev\\D365-DB-MCP`** with the actual path where you cloned the repo.
-> Use double backslashes (`\\`) in JSON.
+> ⚠️ Replace `C:\\Dev\\D365-DB-MCP` with your actual clone path. Use double backslashes in JSON.
 
 **Quick way to find your clone path:**
 ```powershell
-# Run this inside the D365-DB-MCP folder
+cd D365-DB-MCP
 (Get-Item .).FullName
 ```
 
 ---
 
-## Step 4 — Use it in VS Code
+## Step 3b — Wire your project (Visual Studio 2022)
 
-1. Open your project folder in VS Code
-2. Open Copilot Chat: `Ctrl+Alt+I`
-3. Switch to **Agent mode** (dropdown next to the chat input)
-4. Click the **🔧 Tools** button — you should see the `d365-axdb` tools listed
+> Requires **Visual Studio 2022 v17.13 or later** with the **GitHub Copilot** component.  
+> Check: `Help → About Microsoft Visual Studio`  
+> Update: `Help → Check for Updates`
 
-If the tools appear, you're connected. Try:
+Create **`.vs\mcp.json`** in your solution root (the folder containing your `.sln` file):
+
+```jsonc
+{
+  "servers": {
+    "d365-axdb": {
+      "type": "stdio",
+      "command": "C:\\Dev\\D365-DB-MCP\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "mcp_server.server"],
+      "cwd": "C:\\Dev\\D365-DB-MCP",
+      "env": {
+        "AXDB_SERVER": "GNSPLC-DEV-###",
+        "AXDB_DATABASE": "AxDB",
+        "AXDB_DRIVER": "ODBC Driver 17 for SQL Server"
+      }
+    }
+  }
+}
+```
+
+> ⚠️ Replace `C:\\Dev\\D365-DB-MCP` with your actual clone path.  
+> Replace `GNSPLC-DEV-###` with your machine name — run `$env:COMPUTERNAME` to find it.
+
+> ℹ️ Visual Studio does **not** support `envFile` — environment variables must be inlined in the `env` block.  
+> The `.vs\` folder is gitignored by default, so each developer maintains their own local copy with their own machine name. This is by design.
+
+---
+
+## Quick-reference: VS Code vs Visual Studio 2022
+
+| | VS Code | Visual Studio 2022 |
+|---|---|---|
+| **Min version** | Any recent | 17.13+ |
+| **Config file** | `.vscode\mcp.json` | `.vs\mcp.json` (next to `.sln`) |
+| **`envFile` supported** | ✅ Yes | ❌ No — use `env` block instead |
+| **Gitignored by default** | No (you choose) | Yes (`.vs\` is auto-ignored) |
+| **Open chat** | `Ctrl+Alt+I` | `View → GitHub Copilot Chat` |
+| **Switch to Agent mode** | Dropdown in chat input | Mode selector in chat panel |
+| **Find tools** | Click 🔧 Tools button | Click **Add Tools** |
+
+---
+
+## Step 4 — Start querying
+
+**VS Code:**
+1. Open your project → `Ctrl+Alt+I` → switch to **Agent mode** → click **🔧 Tools**
+
+**Visual Studio 2022:**
+1. Open your solution → `View → GitHub Copilot Chat` → switch to **Agent mode** → click **Add Tools**
+
+Confirm `d365-axdb` appears in the tool list, then try:
 
 ```
 How many workers are in HCMWORKER?
@@ -112,6 +160,9 @@ Show me the schema for CUSTINVOICEJOURNALENTITY
 ```
 ```
 What tables contain the column LEGALENTITYID?
+```
+```
+List all DMF views with the LEDGER prefix
 ```
 
 ---
@@ -126,7 +177,8 @@ What tables contain the column LEGALENTITYID?
 | `search_objects` | Find tables/views by keyword |
 | `search_by_column` | Find all tables/views containing a specific column name |
 | `get_view_sql` | Full SQL definition of a DMF view |
-| `get_view_source_tables` | Base tables a view reads from |
+| `get_view_source_tables` | Base tables a view reads from (fast heuristic regex) |
+| `get_view_dependencies` | Authoritative object dependencies via `sys.sql_expression_dependencies` — resolves CTEs and subqueries correctly |
 | `get_table_schema` | Column names, types and nullability |
 | `get_entity_columns` | DMF entity columns with their source tables |
 | `get_custom_fields` | Genus custom fields (`GNS*` or `_CUSTOM`) on any table |
@@ -142,17 +194,21 @@ What tables contain the column LEGALENTITYID?
 ## Troubleshooting
 
 **Tools don't appear in Agent mode**
-- Reload VS Code: `Ctrl+Shift+P` → `Developer: Reload Window`
-- Check Output panel → select `MCP` from the dropdown for startup errors
-- Confirm the paths in your `mcp.json` are correct and use `\\` not `\`
+- VS Code: Reload window — `Ctrl+Shift+P` → `Developer: Reload Window`
+- Visual Studio: Close and reopen the solution
+- Check paths in your `mcp.json` — use `\\` not `\`
+- VS Code: Check Output panel → select `MCP` from the dropdown for startup errors
 
 **`[IM002] Data source name not found`**  
 ODBC Driver 17 (64-bit) is not installed. Download from [aka.ms/odbc17](https://aka.ms/odbc17).
 
 **`Login failed` or `Cannot open database`**  
 - Confirm you're logged in with your **domain account** (not a local account)
-- Confirm `AXDB_SERVER` in the `.env` file matches your machine: run `$env:COMPUTERNAME`
-- Confirm D365 services are running: `Get-Service -DisplayName "Microsoft Dynamics*" | Select Name, Status`
+- Confirm `AXDB_SERVER` matches your machine name: run `$env:COMPUTERNAME`
+- Confirm D365 services are running:
+  ```powershell
+  Get-Service -DisplayName "Microsoft Dynamics*" | Select Name, Status
+  ```
 
 **Run the connection test manually at any time:**
 ```powershell
@@ -164,11 +220,14 @@ cd C:\Dev\D365-DB-MCP
 
 ## Keeping the server up to date
 
-When the repo is updated with new tools, pull and you're done — no reinstall needed:
+When the repo is updated with new tools, a simple pull is all you need — no reinstall:
 
 ```powershell
 cd C:\Dev\D365-DB-MCP
 git pull
 ```
 
-If `requirements.txt` changes (rare), re-run `pip install -r requirements.txt` inside the venv.
+If `requirements.txt` changes (rare), run inside the venv:
+```powershell
+.\.venv\Scripts\pip.exe install -r requirements.txt
+```

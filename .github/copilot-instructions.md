@@ -7,10 +7,12 @@ Keep instructions short and use the concrete project file names below when codin
 
 ### Big picture (what to read first)
 - `mcp_server/server.py` — MCP tool registration and dispatch (entry point).
-- `mcp_server/tools/discovery.py` and `mcp_server/tools/schema.py` — the 9 core tools
-  (list_d365_instances, list_dmf_views, list_tables, search_objects,
-  get_view_sql, get_view_source_tables, get_table_schema, get_entity_columns,
-  get_custom_fields).
+- `mcp_server/tools/discovery.py` and `mcp_server/tools/schema.py` — the 10 core tools
+  (list_d365_instances, list_dmf_views, list_tables, search_objects, search_by_column,
+  get_view_sql, get_view_source_tables, get_view_dependencies, get_table_schema,
+  get_entity_columns, get_custom_fields, get_column_count, get_table_indexes,
+  get_related_tables) plus data tools in `mcp_server/tools/data.py`
+  (get_row_count, get_data_sample, get_distinct_values).
 - `mcp_server/config.py` — instance registry; `get_instance()` is the canonical way
   to resolve an instance name. The `_ALL_PREFIXES` list covers module prefixes for
   all D365 value streams.
@@ -38,7 +40,9 @@ Keep instructions short and use the concrete project file names below when codin
 ### Known heuristics & gotchas to mention when editing code
 - `get_view_source_tables` uses a regex heuristic to extract FROM/JOIN targets and
   filters names shorter than 8 chars; it may return false positives for CTEs
-  and inline views. If accuracy is required, prefer `sys.sql_expression_dependencies`.
+  and inline views. Prefer `get_view_dependencies` (uses `sys.sql_expression_dependencies`)
+  for authoritative results — it correctly resolves CTEs, subqueries, and nested views,
+  and separates base tables from dependent views.
 - `search_objects` interpolates `keyword` into a LIKE expression; inputs are
   internal but avoid exposing this directly to untrusted inputs.
 - The default instance is `default` (see `DEFAULT_INSTANCE` in `mcp_server/config.py`).
