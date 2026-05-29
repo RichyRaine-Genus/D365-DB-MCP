@@ -17,6 +17,7 @@ to their own Tier 1 DEV box; the server is agnostic about which modules are in u
 | **Python 3.11+** | [python.org/downloads](https://www.python.org/downloads/) — tick "Add to PATH" |
 | **ODBC Driver 17 for SQL Server** | [aka.ms/odbc17](https://aka.ms/odbc17) — 64-bit version |
 | **VS Code** with GitHub Copilot | Extension ID: `GitHub.copilot-chat` |
+| **Visual Studio 2022 v17.13+** | Alternative to VS Code — GitHub Copilot component required |
 | **Git clone of this repo** | `git clone <repo-url>` |
 
 > **Tier 1 DEV only.**
@@ -96,13 +97,21 @@ If it fails, see [Troubleshooting](#troubleshooting) below.
 
 ---
 
-## How VS Code Loads Your Config
+## How Your IDE Loads the Config
 
-`.vscode/mcp.json` contains an `envFile` key pointing to `${workspaceFolder}/.env`.
-VS Code automatically loads this file before starting the MCP server process,
-so your `AXDB_SERVER` value is picked up without any extra steps.
+### VS Code
+`.vscode/mcp.json` uses the `envFile` key pointing to `${workspaceFolder}/.env`.
+VS Code loads it automatically before starting the MCP server — no extra steps needed.
 
-You do **not** need to set system environment variables or modify your shell profile.
+### Visual Studio 2022 (v17.13+)
+Create `.vs\mcp.json` next to your `.sln` file. Visual Studio does **not** support `envFile`,
+so the three variables (`AXDB_SERVER`, `AXDB_DATABASE`, `AXDB_DRIVER`) must be inlined
+in an `env` block. The `.vs\` folder is gitignored by default — each developer keeps
+their own local copy with their own machine name.
+
+See [ONBOARDING.md](ONBOARDING.md) for complete config snippets for both IDEs.
+
+You do **not** need system environment variables or shell profile changes in either case.
 
 ---
 
@@ -114,11 +123,18 @@ You do **not** need to set system environment variables or modify your shell pro
 | `list_dmf_views` | List DMF entity export views — filter by module prefix (`HCM`, `LEDGER`, `INVENT`, `SALES`, etc.) |
 | `list_tables` | List base tables matching a SQL `LIKE` pattern (e.g. `INVENT%`, `%CUSTOMER%`) |
 | `search_objects` | Search tables and views by keyword across all modules |
+| `search_by_column` | Find all tables and views that contain a specific column name |
 | `get_view_sql` | Return the full SQL definition of a DMF view |
 | `get_view_source_tables` | Parse a view's SQL and return the base tables it reads from |
 | `get_table_schema` | Return column names, types, and nullability for a table or view |
 | `get_entity_columns` | Return DMF entity columns annotated with their source AxDB tables |
 | `get_custom_fields` | Return Genus-added custom fields (`GNS*` prefix or `_CUSTOM` suffix) |
+| `get_row_count` | Return row count for a table, with optional `WHERE` clause filter |
+| `get_distinct_values` | Return frequency distribution of values in a column |
+| `get_data_sample` | Return `SELECT TOP n` rows with optional column list and filter |
+| `get_column_count` | Return column count with optional name pattern filter |
+| `get_table_indexes` | Return all indexes on a table with columns and key type |
+| `get_related_tables` | Return FK relationships in and out of a table |
 
 ### Example prompts
 
@@ -165,6 +181,15 @@ What custom fields have been added to CUSTTABLE?
 ```
 List all available D365 instances
 ```
+```
+What tables contain the column LEGALENTITYID?
+```
+```
+How many rows are in CUSTTABLE?
+```
+```
+Show me a sample of 10 rows from INVENTTABLE
+```
 
 ---
 
@@ -190,6 +215,12 @@ Re-run the installer script or `pip install -r requirements.txt` inside the acti
 - Open Output panel → select `MCP` from the dropdown — look for startup errors
 - Confirm `.env` exists and contains a valid `AXDB_SERVER` value
 
+### MCP tools not appearing in Visual Studio 2022
+- Confirm VS 2022 is version **17.13 or later** (`Help → About`)
+- Confirm `.vs\mcp.json` exists next to your `.sln` file
+- Confirm `AXDB_SERVER` in the `env` block matches your machine (`$env:COMPUTERNAME`)
+- Close and reopen the solution to force a reload
+
 ### Tools appear but queries return errors
 Run the connection test manually:
 ```powershell
@@ -201,7 +232,9 @@ This isolates whether the issue is the MCP server or the database connection.
 
 ## Architecture Note
 
-The server runs in **stdio mode** — VS Code spawns it as a subprocess when you
-open a Copilot Agent chat. It exits when VS Code closes. No port is opened.
+The server runs in **stdio mode** — your IDE spawns it as a subprocess when you
+open a Copilot Agent chat. It exits when the IDE closes. No port is opened.
 
 All queries are **read-only** (the Windows Auth account has no write grants on AxDB).
+
+For full setup instructions including Visual Studio 2022 config, see [ONBOARDING.md](ONBOARDING.md).
