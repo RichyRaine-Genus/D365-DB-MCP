@@ -5,7 +5,7 @@ Queries sys.tables (generic) so it works regardless of which D365 modules are
 configured. No assumption is made about which value stream the database serves.
 
 Usage:
-    .\.venv\Scripts\python.exe tools\connection_test.py
+    .venv\\Scripts\\python.exe tools\\connection_test.py
 """
 
 import sys

@@ -19,6 +19,7 @@ from mcp_server.tools.discovery import (
     list_dmf_views,
     list_tables,
     search_objects,
+    search_by_column,
 )
 from mcp_server.tools.schema import (
     get_view_sql,
@@ -113,6 +114,35 @@ async def list_tools() -> list[types.Tool]:
                     },
                     "instance": {"type": "string"},
                     "limit": {"type": "integer"},
+                },
+            },
+        ),
+        types.Tool(
+            name="search_by_column",
+            description=(
+                "Find all D365 AxDB tables and/or views that contain a specific column name. "
+                "Use this to discover which entities expose a field — e.g. 'LEGALENTITY', "
+                "'DATAAREAID', 'WORKER', 'INVOICEID'. Works across all modules."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["column_name"],
+                "properties": {
+                    "column_name": {
+                        "type": "string",
+                        "description": "Exact column name to search for (case-insensitive), e.g. 'LEGALENTITY'.",
+                    },
+                    "object_types": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": ["TABLE", "VIEW"]},
+                        "description": "Filter by object type. Default: both.",
+                    },
+                    "name_filter": {
+                        "type": "string",
+                        "description": "SQL LIKE filter on object name, e.g. '%ENTITY%' to restrict to DMF entity views.",
+                    },
+                    "instance": {"type": "string"},
+                    "limit": {"type": "integer", "description": "Max results (default 500)."},
                 },
             },
         ),
@@ -229,6 +259,8 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
                 result = list_tables(**arguments)
             case "search_objects":
                 result = search_objects(**arguments)
+            case "search_by_column":
+                result = search_by_column(**arguments)
             case "get_view_sql":
                 result = get_view_sql(**arguments)
             case "get_view_source_tables":

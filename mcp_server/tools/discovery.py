@@ -6,6 +6,7 @@ Tools:
   list_dmf_views         — list DMF entity export views (BYOD-eligible)
   list_tables            — list base tables matching a name pattern
   search_objects         — search views + tables by keyword
+  search_by_column       — find tables/views that contain a named column
 """
 
 import pyodbc
@@ -167,6 +168,77 @@ def search_objects(
         cur.execute(sql)
         return [
             {"object_type": row[0], "schema": row[1], "object_name": row[2]}
+            for row in cur.fetchall()
+        ]
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Tool: search_by_column
+# ---------------------------------------------------------------------------
+
+def search_by_column(
+    column_name: str,
+    object_types: list[str] | None = None,
+    name_filter: str | None = None,
+    instance: str | None = None,
+    limit: int = 500,
+) -> list[dict]:
+    """
+    Find all tables and/or views in D365 AxDB that contain a column with the
+    given name (exact match, case-insensitive).
+
+    Args:
+        column_name:  Column name to search for (e.g. 'LEGALENTITY', 'DATAAREAID').
+        object_types: 'TABLE', 'VIEW', or both (default: both).
+        name_filter:  Optional SQL LIKE filter on the object name
+                      (e.g. '%ENTITY%' to restrict to DMF entity views).
+        instance:     Instance name (default: 'default').
+        limit:        Max rows returned (default 500).
+
+    Returns:
+        List of dicts with object_type, object_name, column_name, data_type.
+    """
+    types = [t.upper() for t in (object_types or ["TABLE", "VIEW"])]
+
+    type_conditions = []
+    if "TABLE" in types:
+        type_conditions.append("o.type = 'U'")
+    if "VIEW" in types:
+        type_conditions.append("o.type = 'V'")
+    type_sql = " OR ".join(type_conditions)
+
+    name_sql = f"AND o.name LIKE ?" if name_filter else ""
+    name_filter_upper = name_filter.upper() if name_filter else None
+
+    sql = f"""
+        SELECT o.type_desc, o.name AS object_name,
+               c.name AS column_name, tp.name AS data_type
+        FROM   sys.columns  c
+        JOIN   sys.objects  o  ON o.object_id = c.object_id
+        JOIN   sys.types    tp ON tp.user_type_id = c.user_type_id
+        WHERE  ({type_sql})
+          AND  UPPER(c.name) = ?
+          {name_sql}
+        ORDER  BY o.name
+        OFFSET 0 ROWS FETCH NEXT {int(limit)} ROWS ONLY
+    """
+
+    conn = _conn(instance)
+    try:
+        cur = conn.cursor()
+        params = [column_name.upper()]
+        if name_filter_upper:
+            params.append(name_filter_upper)
+        cur.execute(sql, params)
+        return [
+            {
+                "object_type": row[0],
+                "object_name": row[1],
+                "column_name": row[2],
+                "data_type": row[3],
+            }
             for row in cur.fetchall()
         ]
     finally:
