@@ -25,8 +25,16 @@ from mcp_server.tools.schema import (
     get_view_sql,
     get_view_source_tables,
     get_table_schema,
+    get_column_count,
     get_entity_columns,
     get_custom_fields,
+    get_table_indexes,
+    get_related_tables,
+)
+from mcp_server.tools.data import (
+    get_row_count,
+    get_data_sample,
+    get_distinct_values,
 )
 
 logging.basicConfig(level=logging.INFO, stream=sys.stderr)
@@ -240,6 +248,167 @@ async def list_tools() -> list[types.Tool]:
                 },
             },
         ),
+
+        # ── Data inspection tools ─────────────────────────────────────────
+
+        types.Tool(
+            name="get_row_count",
+            description=(
+                "Return the row count for a D365 AxDB table or view. "
+                "Supports an optional WHERE clause for conditional counts, e.g. "
+                "count only active workers, rows for a specific legal entity, etc."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["table_name"],
+                "properties": {
+                    "table_name": {
+                        "type": "string",
+                        "description": "Table or view name, e.g. 'HCMWORKER', 'CUSTTABLE', 'INVENTTABLE'.",
+                    },
+                    "where_clause": {
+                        "type": "string",
+                        "description": (
+                            "Optional SQL WHERE clause without the WHERE keyword. "
+                            "Examples: \"EMPLSTATUS = 1\" | \"DATAAREAID = 'GBSI'\" | "
+                            "\"CREATEDDATETIME >= '2024-01-01'\""
+                        ),
+                    },
+                    "instance": {"type": "string"},
+                },
+            },
+        ),
+        types.Tool(
+            name="get_data_sample",
+            description=(
+                "Return a sample of rows from a D365 AxDB table or view. "
+                "Useful for understanding data shape and content. "
+                "Supports optional WHERE filter, column selection, and ORDER BY."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["table_name"],
+                "properties": {
+                    "table_name": {
+                        "type": "string",
+                        "description": "Table or view name, e.g. 'HCMWORKER', 'INVENTTABLE'.",
+                    },
+                    "top": {
+                        "type": "integer",
+                        "description": "Number of rows to return (default 10, max 200).",
+                    },
+                    "where_clause": {
+                        "type": "string",
+                        "description": "Optional SQL WHERE clause without the WHERE keyword.",
+                    },
+                    "columns": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional list of column names to return. Default: all columns.",
+                    },
+                    "order_by": {
+                        "type": "string",
+                        "description": "Optional ORDER BY expression, e.g. 'CREATEDDATETIME DESC'.",
+                    },
+                    "instance": {"type": "string"},
+                },
+            },
+        ),
+        types.Tool(
+            name="get_distinct_values",
+            description=(
+                "Return distinct values for a column in a D365 AxDB table or view, "
+                "with optional row counts per value. "
+                "Essential for understanding status fields, type enums, and reference data — "
+                "e.g. what EMPLSTATUS values exist, or which DATAAREAID values are populated."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["table_name", "column_name"],
+                "properties": {
+                    "table_name": {"type": "string", "description": "Table or view name."},
+                    "column_name": {
+                        "type": "string",
+                        "description": "Column to inspect, e.g. 'EMPLSTATUS', 'DATAAREAID', 'TYPE'.",
+                    },
+                    "limit": {"type": "integer", "description": "Max distinct values to return (default 100)."},
+                    "where_clause": {"type": "string", "description": "Optional SQL WHERE clause to pre-filter."},
+                    "include_counts": {
+                        "type": "boolean",
+                        "description": "Include row count per value (default true).",
+                    },
+                    "instance": {"type": "string"},
+                },
+            },
+        ),
+
+        # ── Extended schema tools ─────────────────────────────────────────
+
+        types.Tool(
+            name="get_column_count",
+            description=(
+                "Return the column count for a D365 AxDB table or view. "
+                "Supports an optional name pattern filter — e.g. count only GNS custom columns, "
+                "only date columns, only ID/FK columns. Also returns a breakdown by data type."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["object_name"],
+                "properties": {
+                    "object_name": {
+                        "type": "string",
+                        "description": "Table or view name, e.g. 'HCMPOSITION', 'INVENTTABLE'.",
+                    },
+                    "name_filter": {
+                        "type": "string",
+                        "description": (
+                            "Optional SQL LIKE pattern on column name. "
+                            "Examples: 'GNS%' (custom fields) | '%DATE%' | '%ID' | '%_CUSTOM'"
+                        ),
+                    },
+                    "instance": {"type": "string"},
+                },
+            },
+        ),
+        types.Tool(
+            name="get_table_indexes",
+            description=(
+                "Return all indexes defined on a D365 AxDB table, including primary keys, "
+                "unique indexes, and non-unique indexes, with the columns they cover. "
+                "Useful for understanding D365 surrogate keys, RECID indexes, and query performance."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["table_name"],
+                "properties": {
+                    "table_name": {
+                        "type": "string",
+                        "description": "Table name, e.g. 'HCMWORKER', 'INVENTTRANS', 'SALESTABLE'.",
+                    },
+                    "instance": {"type": "string"},
+                },
+            },
+        ),
+        types.Tool(
+            name="get_related_tables",
+            description=(
+                "Return foreign key relationships for a D365 AxDB table — "
+                "both outbound (this table references others) and inbound (other tables reference this one). "
+                "Use this to trace the D365 data model, find child/parent relationships, "
+                "and understand which tables join to a given table."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["table_name"],
+                "properties": {
+                    "table_name": {
+                        "type": "string",
+                        "description": "Table name, e.g. 'HCMWORKER', 'CUSTTABLE', 'INVENTTABLE'.",
+                    },
+                    "instance": {"type": "string"},
+                },
+            },
+        ),
     ]
 
 
@@ -271,6 +440,18 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
                 result = get_entity_columns(**arguments)
             case "get_custom_fields":
                 result = get_custom_fields(**arguments)
+            case "get_row_count":
+                result = get_row_count(**arguments)
+            case "get_data_sample":
+                result = get_data_sample(**arguments)
+            case "get_distinct_values":
+                result = get_distinct_values(**arguments)
+            case "get_column_count":
+                result = get_column_count(**arguments)
+            case "get_table_indexes":
+                result = get_table_indexes(**arguments)
+            case "get_related_tables":
+                result = get_related_tables(**arguments)
             case _:
                 result = {"error": f"Unknown tool: {name}"}
 
