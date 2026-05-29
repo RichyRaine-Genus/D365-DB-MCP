@@ -35,8 +35,8 @@ def get_view_sql(view_name: str, instance: str | None = None) -> dict:
     Return the full SQL definition of a named DMF view.
 
     Args:
-        view_name: View name (e.g. 'HCMWORKERENTITY').
-        instance:  Instance name (default: 'hr').
+        view_name: View name (e.g. 'HCMWORKERENTITY', 'CUSTINVOICEJOURNALENTITY').
+        instance:  Instance name (default: 'default').
 
     Returns:
         Dict with view_name, schema, sql_text. sql_text is None if not found.
@@ -74,8 +74,8 @@ def get_view_source_tables(view_name: str, instance: str | None = None) -> dict:
     Temp tables and CTEs are excluded.
 
     Args:
-        view_name: View name (e.g. 'HCMWORKERENTITY').
-        instance:  Instance name (default: 'hr').
+        view_name: View name (e.g. 'HCMWORKERENTITY', 'SALESORDERHEADERENTITY').
+        instance:  Instance name (default: 'default').
 
     Returns:
         Dict with view_name, source_tables (list of dicts with table_name, alias).
@@ -130,8 +130,8 @@ def get_table_schema(
     Return the column schema for a named table or view.
 
     Args:
-        object_name: Table or view name (e.g. 'HCMWORKER', 'HCMWORKERENTITY').
-        instance:    Instance name (default: 'hr').
+        object_name: Table or view name (e.g. 'HCMWORKER', 'CUSTTABLE', 'INVENTTABLE').
+        instance:    Instance name (default: 'default').
 
     Returns:
         Dict with object_name, object_type, columns list of dicts:
@@ -186,8 +186,8 @@ def get_entity_columns(view_name: str, instance: str | None = None) -> dict:
     This combines get_view_sql + get_view_source_tables + get_table_schema.
 
     Args:
-        view_name: DMF entity view name (e.g. 'HCMWORKERENTITY').
-        instance:  Instance name (default: 'hr').
+        view_name: DMF entity view name (e.g. 'HCMWORKERENTITY', 'SALESORDERHEADERENTITY').
+        instance:  Instance name (default: 'default').
 
     Returns:
         Dict with view_name, columns (column_name, found_in_source_tables list),
@@ -239,8 +239,8 @@ def get_custom_fields(
     a GNS* prefix or ends with _CUSTOM suffix.
 
     Args:
-        table_name: Table name (e.g. 'HCMWORKER', 'HCMEMPLOYMENT').
-        instance:   Instance name (default: 'hr').
+        table_name: Table name (e.g. 'HCMWORKER', 'CUSTTABLE', 'INVENTTABLE').
+        instance:   Instance name (default: 'default').
 
     Returns:
         Dict with table_name, custom_field_count, custom_fields list.

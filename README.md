@@ -1,7 +1,11 @@
-# D365 HR AxDB — MCP Server
+# D365 AxDB — MCP Server
 
 Gives GitHub Copilot (Agent mode) and other MCP clients live read-only access
-to the D365 HR AxDB on your local Tier 1 DEV machine.
+to a D365 / F&O AxDB on your local Tier 1 DEV machine.
+
+Works across **all D365 value streams** — Human Resources, Finance, Supply Chain
+Management, Project Operations, Commerce, and more.  Every team member connects
+to their own Tier 1 DEV box; the server is agnostic about which modules are in use.
 
 ---
 
@@ -36,7 +40,7 @@ The script will:
 2. Create `.venv` and install all dependencies
 3. Prompt you for your `AXDB_SERVER` name (defaults to `$env:COMPUTERNAME`)
 4. Write your personal `.env` file (never committed to Git)
-5. Run a live connection test — confirms row count from `HCMWORKER`
+5. Run a live connection test — confirms AxDB connectivity and detects D365 database
 6. Confirm `.vscode/mcp.json` is present
 
 Then open the repo in VS Code → Copilot Chat → **Agent mode**.
@@ -81,9 +85,10 @@ or run `$env:COMPUTERNAME` in PowerShell.
 
 Expected output:
 ```
-Connected to GNSPLC-DEV-265 / AxDB
+Connecting to GNSPLC-DEV-265 / AxDB
 SQL Server version: Microsoft SQL Server 2019 ...
-HCMWORKER row count: 1234
+Total tables in AxDB: 22237
+Looks like D365 AxDB: Yes
 OK
 ```
 
@@ -105,10 +110,10 @@ You do **not** need to set system environment variables or modify your shell pro
 
 | Tool | Description |
 |---|---|
-| `list_d365_instances` | List registered AxDB instances (HR, Finance, SCM) |
-| `list_dmf_views` | List DMF entity export views — optionally filter by prefix (`HCM`, `DIR`, etc.) |
-| `list_tables` | List base tables matching a SQL `LIKE` pattern (e.g. `HCM%`) |
-| `search_objects` | Search tables and views by keyword |
+| `list_d365_instances` | List registered AxDB instances and their configured module prefixes |
+| `list_dmf_views` | List DMF entity export views — filter by module prefix (`HCM`, `LEDGER`, `INVENT`, `SALES`, etc.) |
+| `list_tables` | List base tables matching a SQL `LIKE` pattern (e.g. `INVENT%`, `%CUSTOMER%`) |
+| `search_objects` | Search tables and views by keyword across all modules |
 | `get_view_sql` | Return the full SQL definition of a DMF view |
 | `get_view_source_tables` | Parse a view's SQL and return the base tables it reads from |
 | `get_table_schema` | Return column names, types, and nullability for a table or view |
@@ -117,8 +122,9 @@ You do **not** need to set system environment variables or modify your shell pro
 
 ### Example prompts
 
+**HR / Human Capital Management**
 ```
-List all HCM tables in the hr instance
+List all HCM tables in the default instance
 ```
 ```
 Show me the SQL for HCMWORKERENTITY
@@ -126,11 +132,38 @@ Show me the SQL for HCMWORKERENTITY
 ```
 What base tables does HCMPOSITIONDETAILENTITY join?
 ```
+
+**Finance**
 ```
-What custom fields has Genus added to HCMWORKER?
+Search for tables related to LEDGER
 ```
 ```
-Get the schema for HCMEMPLOYMENT
+Get the schema for CUSTINVOICEJOURNALENTITY
+```
+```
+What columns does VENDTABLE have?
+```
+
+**Supply Chain Management**
+```
+List all views with the INVENT prefix
+```
+```
+What base tables does SALESORDERHEADERENTITY read from?
+```
+```
+Get the schema for INVENTTABLE
+```
+
+**Cross-module / Discovery**
+```
+Search for all tables containing the word WORKER
+```
+```
+What custom fields have been added to CUSTTABLE?
+```
+```
+List all available D365 instances
 ```
 
 ---

@@ -1,6 +1,9 @@
 """
 Quick connection test — run this to verify your AxDB connection is working.
 
+Queries sys.tables (generic) so it works regardless of which D365 modules are
+configured. No assumption is made about which value stream the database serves.
+
 Usage:
     .\.venv\Scripts\python.exe tools\connection_test.py
 """
@@ -23,9 +26,18 @@ try:
     version = cur.fetchone()[0].splitlines()[0]
     print(f"SQL Server version: {version}")
 
-    cur.execute("SELECT COUNT(*) FROM HCMWORKER")
+    cur.execute("SELECT COUNT(*) FROM sys.tables")
     count = cur.fetchone()[0]
-    print(f"HCMWORKER row count: {count}")
+    print(f"Total tables in AxDB: {count}")
+
+    # Quick sanity-check: confirm this looks like a D365 AxDB
+    # (SYSTEMPARAMETERS is present in every D365 / F&O database)
+    cur.execute(
+        "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES "
+        "WHERE TABLE_NAME = 'SYSTEMPARAMETERS'"
+    )
+    is_d365 = cur.fetchone()[0] > 0
+    print(f"Looks like D365 AxDB: {'Yes' if is_d365 else 'No (SYSTEMPARAMETERS not found)'}")
 
     conn.close()
     print("OK")

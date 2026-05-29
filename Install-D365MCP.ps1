@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    One-shot installer for the D365 HR AxDB MCP server.
+    One-shot installer for the D365 AxDB MCP server.
 
 .DESCRIPTION
     Run this script once on a new machine to:
@@ -12,7 +12,8 @@
       6. Confirm .vscode/mcp.json is in place
 
     After this script completes, open the repo in VS Code, switch Copilot Chat
-    to Agent mode, and the D365 tools will be available.
+    to Agent mode, and the D365 tools will be available for any value stream
+    (HR, Finance, SCM, Projects, etc.).
 
 .NOTES
     Requirements before running:
@@ -40,7 +41,7 @@ $RepoRoot = $PSScriptRoot    # directory containing this script = repo root
 $VenvDir  = Join-Path $RepoRoot '.venv'
 $EnvFile  = Join-Path $RepoRoot '.env'
 
-Write-Host "`nD365 HR AxDB MCP Server — Installer" -ForegroundColor Magenta
+Write-Host "`nD365 AxDB MCP Server — Installer" -ForegroundColor Magenta
 Write-Host "Repo root: $RepoRoot`n"
 
 
@@ -180,7 +181,7 @@ Write-Host "  Next steps:"
 Write-Host "    1. Open this repo folder in VS Code"
 Write-Host "    2. Open Copilot Chat (Ctrl+Alt+I) -> switch to Agent mode"
 Write-Host "    3. You should see D365 tools in the tool picker"
-Write-Host "    4. Try: 'list all HCM tables in the hr instance'"
+Write-Host "    4. Try: 'List all INVENT tables' or 'Show SQL for SALESORDERHEADERENTITY'"
 Write-Host ""
 Write-Host "  Your config: .env  (never commit this file)"
 Write-Host "  To change server: edit AXDB_SERVER in .env"

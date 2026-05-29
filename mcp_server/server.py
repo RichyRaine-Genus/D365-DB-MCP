@@ -53,24 +53,46 @@ async def list_tools() -> list[types.Tool]:
             name="list_dmf_views",
             description=(
                 "List DMF entity export views in a D365 AxDB instance. "
-                "These are the views that BYOD exports use as sources."
+                "These are the views that BYOD exports use as sources. "
+                "Covers all value streams: HR (HCM), Finance (LEDGER/CUST/VEND), SCM (INVENT/PURCH/SALES/WHS), Projects (PROJ), etc."
             ),
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "prefix": {"type": "string", "description": "Optional name prefix filter e.g. 'HCM', 'DIR'"},
-                    "instance": {"type": "string", "description": "Instance name: 'hr' (default), 'finance', 'scm'"},
+                    "prefix": {
+                        "type": "string",
+                        "description": (
+                            "Optional module prefix filter, e.g. 'HCM' (HR), 'LEDGER' (Finance), "
+                            "'CUST' (AR), 'VEND' (AP), 'INVENT' (Inventory), 'PURCH' (Procurement), "
+                            "'SALES' (Sales), 'WHS' (Warehouse), 'PROJ' (Projects). "
+                            "Omit to return views across all configured modules."
+                        ),
+                    },
+                    "instance": {
+                        "type": "string",
+                        "description": "Instance name (default: 'default'). Use list_d365_instances to see available options.",
+                    },
                     "limit": {"type": "integer", "description": "Max results (default 200)"},
                 },
             },
         ),
         types.Tool(
             name="list_tables",
-            description="List base tables in a D365 AxDB instance matching an optional SQL LIKE pattern.",
+            description=(
+                "List base tables in a D365 AxDB instance matching an optional SQL LIKE pattern. "
+                "Works across all D365 modules — HR, Finance, SCM, Projects, etc."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "pattern": {"type": "string", "description": "SQL LIKE pattern e.g. 'HCM%', '%WORKER%'"},
+                    "pattern": {
+                        "type": "string",
+                        "description": (
+                            "SQL LIKE pattern for the table name, e.g. 'HCM%' (HR), "
+                            "'LEDGER%' (GL), 'INVENT%' (Inventory), 'CUST%' (AR), "
+                            "'VEND%' (AP), 'SALES%' (Sales), '%WORKER%' (any worker table)."
+                        ),
+                    },
                     "instance": {"type": "string"},
                     "limit": {"type": "integer"},
                 },
@@ -96,12 +118,21 @@ async def list_tools() -> list[types.Tool]:
         ),
         types.Tool(
             name="get_view_sql",
-            description="Return the full SQL definition of a named DMF view from D365 AxDB.",
+            description=(
+                "Return the full SQL definition of a named DMF entity view from D365 AxDB. "
+                "Supports views from any D365 module (HR, Finance, SCM, Projects, etc.)."
+            ),
             inputSchema={
                 "type": "object",
                 "required": ["view_name"],
                 "properties": {
-                    "view_name": {"type": "string", "description": "e.g. 'HCMWORKERENTITY'"},
+                    "view_name": {
+                        "type": "string",
+                        "description": (
+                            "DMF view name in UPPERCASE, e.g. 'HCMWORKERENTITY' (HR), "
+                            "'CUSTINVOICEJOURNALENTITY' (Finance), 'INVENTTABLEENTITY' (SCM)."
+                        ),
+                    },
                     "instance": {"type": "string"},
                 },
             },
@@ -123,12 +154,21 @@ async def list_tools() -> list[types.Tool]:
         ),
         types.Tool(
             name="get_table_schema",
-            description="Return the column schema (names, types, nullability) for a D365 AxDB table or view.",
+            description=(
+                "Return the column schema (names, types, nullability) for any D365 AxDB table or view. "
+                "Works for tables and views across all D365 modules."
+            ),
             inputSchema={
                 "type": "object",
                 "required": ["object_name"],
                 "properties": {
-                    "object_name": {"type": "string", "description": "e.g. 'HCMWORKER'"},
+                    "object_name": {
+                        "type": "string",
+                        "description": (
+                            "Table or view name in UPPERCASE, e.g. 'HCMWORKER' (HR), "
+                            "'LEDGERJOURNALTABLE' (Finance), 'INVENTTABLE' (SCM), 'CUSTTABLE' (AR)."
+                        ),
+                    },
                     "instance": {"type": "string"},
                 },
             },
@@ -151,14 +191,21 @@ async def list_tools() -> list[types.Tool]:
         types.Tool(
             name="get_custom_fields",
             description=(
-                "Return custom fields (GNS* prefix or _CUSTOM suffix) for a named D365 AxDB table. "
-                "Use this to discover Genus-added extensions to the D365 data model."
+                "Return custom / extension fields (GNS* prefix or _CUSTOM suffix) for a named D365 AxDB table. "
+                "Use this to discover implementation-specific extensions to the D365 data model "
+                "across any module (HR, Finance, SCM, etc.)."
             ),
             inputSchema={
                 "type": "object",
                 "required": ["table_name"],
                 "properties": {
-                    "table_name": {"type": "string", "description": "e.g. 'HCMWORKER'"},
+                    "table_name": {
+                        "type": "string",
+                        "description": (
+                            "Table name in UPPERCASE, e.g. 'HCMWORKER' (HR), "
+                            "'CUSTTABLE' (AR), 'INVENTTABLE' (SCM)."
+                        ),
+                    },
                     "instance": {"type": "string"},
                 },
             },

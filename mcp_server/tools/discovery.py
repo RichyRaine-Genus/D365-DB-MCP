@@ -61,7 +61,7 @@ def list_dmf_views(
     Args:
         prefix:   Optional name prefix filter (e.g. "HCM", "DIR").
                   If omitted, uses all prefixes registered for the instance.
-        instance: Instance name from config (default: 'hr').
+        instance: Instance name from config (default: 'default').
         limit:    Max rows returned (default 200).
 
     Returns:
@@ -103,7 +103,7 @@ def list_tables(
 
     Args:
         pattern:  SQL LIKE pattern for TABLE_NAME (default: no filter).
-        instance: Instance name (default: 'hr').
+        instance: Instance name (default: 'default').
         limit:    Max rows returned.
 
     Returns:
@@ -143,7 +143,7 @@ def search_objects(
     Args:
         keyword:      Text to search for in object name (case-insensitive).
         object_types: List of 'TABLE', 'VIEW', or both (default: both).
-        instance:     Instance name (default: 'hr').
+        instance:     Instance name (default: 'default').
         limit:        Max rows returned.
 
     Returns:
