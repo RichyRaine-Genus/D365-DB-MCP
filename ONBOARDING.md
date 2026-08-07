@@ -164,6 +164,15 @@ What tables contain the column LEGALENTITYID?
 ```
 List all DMF views with the LEDGER prefix
 ```
+```
+Give me a permission summary for GNSHRHSAuditAdministratorRole
+```
+```
+Show me the security graph for GNSHRHSAuditAdministratorRole
+```
+```
+Tell me about the security duty GNSHRHSAuditAdministratorDuty
+```
 
 ---
 
@@ -188,6 +197,11 @@ List all DMF views with the LEDGER prefix
 | `get_column_count` | Column count with optional name pattern filter |
 | `get_table_indexes` | All indexes on a table with columns and key type |
 | `get_related_tables` | FK relationships in and out of a table |
+| `get_security_role` | Return a D365 security role and its core metadata |
+| `get_security_duty` | Return a D365 security duty and its metadata |
+| `get_security_privilege` | Return a D365 security privilege and its metadata |
+| `get_role_security_graph` | Return the duties, direct privileges, inherited privileges, and effective graph for a role |
+| `get_role_permission_summary` | Return a human-readable summary of a role's effective permissions and counts |
 
 ---
 

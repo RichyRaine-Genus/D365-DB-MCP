@@ -37,6 +37,13 @@ from mcp_server.tools.data import (
     get_data_sample,
     get_distinct_values,
 )
+from mcp_server.tools.security import (
+    get_security_role,
+    get_security_duty,
+    get_security_privilege,
+    get_role_security_graph,
+    get_role_permission_summary,
+)
 
 logging.basicConfig(level=logging.INFO, stream=sys.stderr)
 log = logging.getLogger(__name__)
@@ -435,6 +442,75 @@ async def list_tools() -> list[types.Tool]:
                 },
             },
         ),
+        types.Tool(
+            name="get_security_role",
+            description=(
+                "Return a D365 security role from AxDB by name or AOT name, including its core metadata. "
+                "Use this for role-based access reviews, design checks, and quick role discovery."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["role_name"],
+                "properties": {
+                    "role_name": {"type": "string"},
+                    "instance": {"type": "string"},
+                },
+            },
+        ),
+        types.Tool(
+            name="get_security_duty",
+            description="Return a D365 security duty from AxDB by name or AOT name, including its metadata and identifier.",
+            inputSchema={
+                "type": "object",
+                "required": ["duty_name"],
+                "properties": {
+                    "duty_name": {"type": "string"},
+                    "instance": {"type": "string"},
+                },
+            },
+        ),
+        types.Tool(
+            name="get_security_privilege",
+            description="Return a D365 security privilege from AxDB by name or AOT name, including its metadata and identifier.",
+            inputSchema={
+                "type": "object",
+                "required": ["privilege_name"],
+                "properties": {
+                    "privilege_name": {"type": "string"},
+                    "instance": {"type": "string"},
+                },
+            },
+        ),
+        types.Tool(
+            name="get_role_security_graph",
+            description=(
+                "Return the effective security relationship graph for a role: assigned duties, direct privileges, "
+                "duty-based privilege links, and the effective permission count derived from AxDB."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["role_name"],
+                "properties": {
+                    "role_name": {"type": "string"},
+                    "instance": {"type": "string"},
+                },
+            },
+        ),
+        types.Tool(
+            name="get_role_permission_summary",
+            description=(
+                "Give a human-readable summary of a role's permissions, including duties, direct privileges, "
+                "inherited privileges, and the effective permission count for security investigations."
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["role_name"],
+                "properties": {
+                    "role_name": {"type": "string"},
+                    "instance": {"type": "string"},
+                },
+            },
+        ),
     ]
 
 
@@ -480,6 +556,16 @@ async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
                 result = get_table_indexes(**arguments)
             case "get_related_tables":
                 result = get_related_tables(**arguments)
+            case "get_security_role":
+                result = get_security_role(**arguments)
+            case "get_security_duty":
+                result = get_security_duty(**arguments)
+            case "get_security_privilege":
+                result = get_security_privilege(**arguments)
+            case "get_role_security_graph":
+                result = get_role_security_graph(**arguments)
+            case "get_role_permission_summary":
+                result = get_role_permission_summary(**arguments)
             case _:
                 result = {"error": f"Unknown tool: {name}"}
 
