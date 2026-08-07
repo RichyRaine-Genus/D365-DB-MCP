@@ -32,18 +32,31 @@ except ImportError:
 
 # ── Connection parameters ─────────────────────────────────────────────────────
 # Each can be overridden via .env or environment variable.
-AXDB_SERVER   = os.environ.get("AXDB_SERVER",   "GNSPLC-DEV-265")
-AXDB_DATABASE = os.environ.get("AXDB_DATABASE", "AxDB")
-AXDB_DRIVER   = os.environ.get("AXDB_DRIVER",   "ODBC Driver 17 for SQL Server")
+AXDB_SERVER   = os.environ.get("AXDB_SERVER") or "GNSPLC-DEV-283"
+AXDB_DATABASE = os.environ.get("AXDB_DATABASE") or "AxDB"
+AXDB_DRIVER   = os.environ.get("AXDB_DRIVER") or "ODBC Driver 17 for SQL Server"
+AXDB_AUTH_MODE = (os.environ.get("AXDB_AUTH_MODE") or "windows").strip().lower()
+AXDB_USERNAME = os.environ.get("AXDB_USERNAME") or ""
+AXDB_PASSWORD = os.environ.get("AXDB_PASSWORD") or ""
 
 
 def _build_conn_str(server: str, database: str, driver: str) -> str:
+    if AXDB_AUTH_MODE == "sql" or (AXDB_USERNAME and AXDB_PASSWORD):
+        return (
+            f"DRIVER={{{driver}}};"
+            f"SERVER={server};"
+            f"DATABASE={database};"
+            f"UID={AXDB_USERNAME};"
+            f"PWD={AXDB_PASSWORD};"
+            "ApplicationIntent=ReadOnly;"
+        )
+
     return (
         f"DRIVER={{{driver}}};"
         f"SERVER={server};"
         f"DATABASE={database};"
         "Trusted_Connection=yes;"
-        "ApplicationIntent=ReadOnly;"   # safety: read-only session intent
+        "ApplicationIntent=ReadOnly;"
     )
 
 
