@@ -191,6 +191,31 @@ List all DMF views with the LEDGER prefix
 
 ---
 
+## Local connection setup for your DEV machine
+
+Each user should create or update their local `.env` file in the repo root with their own values:
+
+```dotenv
+AXDB_SERVER=GNSPLC-DEV-###
+AXDB_DATABASE=AxDB
+AXDB_DRIVER=ODBC Driver 17 for SQL Server
+AXDB_AUTH_MODE=windows
+AXDB_USERNAME=
+AXDB_PASSWORD=
+```
+
+Use `windows` for domain authentication. Use `sql` and fill in `AXDB_USERNAME` / `AXDB_PASSWORD` if your environment requires SQL authentication.
+
+To verify the connection from your machine:
+
+```powershell
+.\.venv\Scripts\python.exe tools\connection_test.py
+```
+
+If the connection fails, confirm the host name, your domain access, and whether you need Windows or SQL authentication.
+
+---
+
 ## Troubleshooting
 
 **Tools don't appear in Agent mode**
