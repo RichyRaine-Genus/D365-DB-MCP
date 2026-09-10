@@ -99,6 +99,20 @@ If it fails, see [Troubleshooting](#troubleshooting) below.
 
 ## How Your IDE Loads the Config
 
+### Native `.env` support
+The server loads a `.env` file itself (via `python-dotenv`), so it works for
+standalone / non-VS-Code launches too — no external launcher required.
+
+**Precedence (highest to lowest):** OS environment variables > `.env` file > built-in defaults.
+A real environment variable is never overridden by the `.env`.
+
+**`.env` search order** (each existing file is loaded without overriding real env vars):
+1. An explicit path from the `AXDB_DOTENV` environment variable
+2. The current working directory (`./.env`)
+3. The repo root (`.env` next to `db_config.py`)
+
+A missing `.env` is a silent no-op — the built-in defaults are used.
+
 ### VS Code
 `.vscode/mcp.json` uses the `envFile` key pointing to `${workspaceFolder}/.env`.
 VS Code loads it automatically before starting the MCP server — no extra steps needed.

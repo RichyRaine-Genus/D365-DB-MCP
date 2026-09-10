@@ -4,10 +4,15 @@ Central database connection config.
 All scripts that need live AxDB access should import get_axdb_conn() from here.
 Credentials: Windows Authentication (Trusted_Connection) — no secrets in source.
 
-Configuration (in priority order):
-  1. Environment variables  AXDB_SERVER / AXDB_DATABASE / AXDB_DRIVER
-  2. A .env file in the repo root  (loaded automatically if python-dotenv is installed)
+Configuration precedence (highest to lowest):
+  1. OS environment variables  AXDB_SERVER / AXDB_DATABASE / AXDB_DRIVER
+  2. A .env file  (loaded natively via python-dotenv, never overriding real env vars)
   3. Hardcoded fallback defaults below
+
+.env search order (each existing file loaded with override=False):
+  1. explicit path from the AXDB_DOTENV environment variable
+  2. the current working directory
+  3. the repo root (resolved relative to this module)
 
 Each developer should create a .env file in the repo root with their own values:
 
@@ -20,15 +25,34 @@ Copy .env.example to .env to get started.
 """
 
 import os
+from pathlib import Path
+
 import pyodbc
 
-# ── Load .env file if present (requires: pip install python-dotenv) ──────────
-# Fails silently if python-dotenv is not installed — env vars still work.
-try:
-    from dotenv import load_dotenv as _load_dotenv
-    _load_dotenv()          # looks for .env in cwd, then repo root
-except ImportError:
-    pass                    # dotenv not installed; rely on real env vars
+
+def _load_dotenv_files() -> None:
+    """Populate os.environ from a .env without overriding real env vars.
+
+    Precedence: OS env > .env > defaults. Search order:
+      1. explicit path from AXDB_DOTENV
+      2. current working directory
+      3. repo root (relative to this module)
+    Missing files are a silent no-op; python-dotenv absent is a no-op.
+    """
+    try:
+        from dotenv import load_dotenv
+    except ImportError:
+        return
+    explicit = os.environ.get("AXDB_DOTENV")
+    if explicit:
+        load_dotenv(explicit, override=False)
+        return
+    for candidate in (Path.cwd() / ".env", Path(__file__).resolve().parents[0] / ".env"):
+        if candidate.is_file():
+            load_dotenv(candidate, override=False)
+
+
+_load_dotenv_files()
 
 # ── Connection parameters ─────────────────────────────────────────────────────
 # Each can be overridden via .env or environment variable.
